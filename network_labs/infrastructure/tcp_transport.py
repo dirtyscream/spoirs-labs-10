@@ -1,4 +1,6 @@
+import platform
 import socket
+import struct
 from typing import Optional
 
 from network_labs.domain.interfaces import MessageTransport
@@ -6,6 +8,10 @@ from network_labs.domain.interfaces import MessageTransport
 DELIMITER = b"\n"
 LINE_ENDING = "\r\n"
 RECV_SIZE = 4096
+
+KEEPALIVE_IDLE = 30
+KEEPALIVE_INTERVAL = 10
+KEEPALIVE_MAX_FAILS = 3
 
 
 class TcpTransport(MessageTransport):
@@ -84,5 +90,37 @@ def create_client_socket(host: str, port: int) -> socket.socket:
     return sock
 
 
-def enable_keepalive(sock: socket.socket) -> None:
+def enable_keepalive(
+    sock: socket.socket,
+    idle: int = KEEPALIVE_IDLE,
+    interval: int = KEEPALIVE_INTERVAL,
+    max_fails: int = KEEPALIVE_MAX_FAILS,
+) -> None:
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+    system = platform.system()
+    if system == "Linux":
+        _configure_linux_keepalive(sock, idle, interval, max_fails)
+    elif system == "Darwin":
+        _configure_darwin_keepalive(sock, idle)
+    elif system == "Windows":
+        _configure_windows_keepalive(sock, idle, interval)
+
+
+def _configure_linux_keepalive(
+    sock: socket.socket, idle: int, interval: int, max_fails: int,
+) -> None:
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle)
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, interval)
+    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, max_fails)
+
+
+def _configure_darwin_keepalive(sock: socket.socket, idle: int) -> None:
+    TCP_KEEPALIVE_DARWIN = 0x10
+    sock.setsockopt(socket.IPPROTO_TCP, TCP_KEEPALIVE_DARWIN, idle)
+
+
+def _configure_windows_keepalive(
+    sock: socket.socket, idle: int, interval: int,
+) -> None:
+    vals = struct.pack("III", 1, idle * 1000, interval * 1000)
+    sock.ioctl(socket.SIO_KEEPALIVE_VALS, vals)

@@ -12,16 +12,17 @@ LABS = {
 
 def display_header() -> None:
     print("\nNetwork Labs")
-    print("============")
+    print("============", flush=True)
 
 
 def select_lab() -> int:
     print("Select lab:")
     for num, desc in LABS.items():
         print(f"  {num}. {desc}")
+    print(flush=True)
     while True:
         try:
-            choice = int(input("\nEnter lab number (1-4): "))
+            choice = int(input("Enter lab number (1-4): "))
             if choice in LABS:
                 return choice
         except (ValueError, EOFError):
@@ -33,9 +34,10 @@ def select_mode() -> str:
     print("\nSelect mode:")
     print("  c - Client")
     print("  s - Server")
+    print(flush=True)
     while True:
         try:
-            choice = input("\nEnter mode (c/s): ").strip().lower()
+            choice = input("Enter mode (c/s): ").strip().lower()
             if choice in ("c", "s"):
                 return choice
         except (EOFError, KeyboardInterrupt):
@@ -48,7 +50,7 @@ def run_menu(runners: Dict[int, LabRunner]) -> None:
     lab_num = select_lab()
     mode = select_mode()
     runner = runners[lab_num]
-    print()
+    print(flush=True)
     if mode == "s":
         runner.run_server()
     else:

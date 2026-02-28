@@ -49,6 +49,9 @@ class FileStore(ABC):
     @abstractmethod
     def exists(self, filename: str) -> bool: ...
 
+    @abstractmethod
+    def delete_file(self, filename: str) -> None: ...
+
 
 class LabRunner(ABC):
     @abstractmethod

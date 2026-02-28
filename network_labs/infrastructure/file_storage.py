@@ -36,6 +36,12 @@ class LocalFileStore(FileStore):
     def exists(self, filename: str) -> bool:
         return os.path.exists(self._resolve(filename))
 
+    def delete_file(self, filename: str) -> None:
+        path = self._resolve(filename)
+        with self._lock_for(filename):
+            if os.path.exists(path):
+                os.remove(path)
+
     def _resolve(self, filename: str) -> str:
         return os.path.join(self._base_dir, os.path.basename(filename))
 

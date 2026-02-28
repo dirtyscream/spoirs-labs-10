@@ -1,4 +1,3 @@
-import datetime
 import os
 import socket
 from typing import Optional, Tuple
@@ -131,11 +130,9 @@ class Lab4Server:
 
 class Lab4Client:
     def __init__(
-        self, config: Lab4Config,
-        file_config: FileConfig, rudp_config: ReliableUdpConfig,
+        self, config: Lab4Config, rudp_config: ReliableUdpConfig,
     ) -> None:
         self._config = config
-        self._file_cfg = file_config
         self._rudp_cfg = rudp_config
 
     def run(self) -> None:
@@ -302,4 +299,4 @@ class Lab4Runner(LabRunner):
         Lab4Server(self._config, self._file_cfg, self._rudp_cfg).run()
 
     def run_client(self) -> None:
-        Lab4Client(self._config, self._file_cfg, self._rudp_cfg).run()
+        Lab4Client(self._config, self._rudp_cfg).run()

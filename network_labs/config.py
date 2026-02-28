@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 class ServerConfig:
     host: str = "0.0.0.0"
     port: int = 8888
-    buffer_size: int = 4096
     backlog: int = 5
 
 
@@ -13,7 +12,6 @@ class ServerConfig:
 class ClientConfig:
     host: str = "127.0.0.1"
     port: int = 8888
-    buffer_size: int = 4096
 
 
 @dataclass(frozen=True)

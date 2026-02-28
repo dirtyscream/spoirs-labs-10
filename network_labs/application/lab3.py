@@ -108,11 +108,9 @@ class Lab3Server:
 
 class Lab3Client:
     def __init__(
-        self, config: ClientConfig,
-        file_config: FileConfig, rudp_config: ReliableUdpConfig,
+        self, config: ClientConfig, rudp_config: ReliableUdpConfig,
     ) -> None:
         self._config = config
-        self._file_cfg = file_config
         self._rudp_cfg = rudp_config
 
     def run(self) -> None:
@@ -252,4 +250,4 @@ class Lab3Runner(LabRunner):
         Lab3Server(self._server_cfg, self._file_cfg, self._rudp_cfg).run()
 
     def run_client(self) -> None:
-        Lab3Client(self._client_cfg, self._file_cfg, self._rudp_cfg).run()
+        Lab3Client(self._client_cfg, self._rudp_cfg).run()

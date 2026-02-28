@@ -4,9 +4,9 @@ from network_labs.config import (
     ServerConfig, ClientConfig, FileConfig,
     ReliableUdpConfig, Lab4Config,
 )
-from network_labs.application.lab1 import Lab1Runner
 from network_labs.application.lab2 import Lab2Runner
 from network_labs.application.lab3 import Lab3Runner
+from network_labs.application.lab_mux import LabMuxRunner
 from network_labs.application.lab4 import Lab4Runner
 from network_labs.presentation.menu import run_menu
 
@@ -25,9 +25,9 @@ def create_runners(server_host: str) -> dict:
     lab4_cfg = Lab4Config(client_host=server_host)
 
     return {
-        1: Lab1Runner(server_cfg, client_cfg),
-        2: Lab2Runner(server_cfg, client_cfg, file_cfg),
-        3: Lab3Runner(server_cfg, client_cfg, file_cfg, rudp_cfg),
+        1: Lab2Runner(server_cfg, client_cfg, file_cfg),
+        2: Lab3Runner(server_cfg, client_cfg, file_cfg, rudp_cfg),
+        3: LabMuxRunner(server_cfg, client_cfg, file_cfg),
         4: Lab4Runner(lab4_cfg, file_cfg, rudp_cfg),
     }
 

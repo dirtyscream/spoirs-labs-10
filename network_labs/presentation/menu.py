@@ -3,9 +3,9 @@ from typing import Dict
 from network_labs.domain.interfaces import LabRunner
 
 LABS = {
-    1: "TCP Commands (ECHO, TIME, CLOSE)",
-    2: "TCP File Transfer (UPLOAD, DOWNLOAD)",
-    3: "Reliable UDP (with acks, window)",
+    1: "TCP Commands + File Transfer (ECHO, TIME, UPLOAD, DOWNLOAD, CLOSE)",
+    2: "Reliable UDP (commands + file transfer over UDP)",
+    3: "Multiplexing TCP (select/poll, multiple clients)",
     4: "UDP + Dynamic Thread Pool",
 }
 

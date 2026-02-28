@@ -1,6 +1,5 @@
 import platform
 import socket
-import struct
 from typing import Optional
 
 from network_labs.domain.interfaces import MessageTransport
@@ -122,5 +121,4 @@ def _configure_darwin_keepalive(sock: socket.socket, idle: int) -> None:
 def _configure_windows_keepalive(
     sock: socket.socket, idle: int, interval: int,
 ) -> None:
-    vals = struct.pack("III", 1, idle * 1000, interval * 1000)
-    sock.ioctl(socket.SIO_KEEPALIVE_VALS, vals)
+    sock.ioctl(socket.SIO_KEEPALIVE_VALS, (1, idle * 1000, interval * 1000))

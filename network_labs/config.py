@@ -17,8 +17,8 @@ class ClientConfig:
 @dataclass(frozen=True)
 class ReliableUdpConfig:
     packet_size: int = 1400
-    window_size: int = 8
-    ack_timeout: float = 0.3
+    window_size: int = 10
+    ack_timeout: float = 0.1
     max_retries: int = 10
 
 

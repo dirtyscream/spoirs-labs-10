@@ -46,8 +46,10 @@ class ReliableUdp(ReliableTransport):
         self._send_with_ack(packet, address)
 
     def receive_message(self) -> Tuple[str, Tuple[str, int]]:
+        self._sock.settimeout(None)
         while True:
-            seq, flags, payload, addr = self._recv_packet()
+            raw, addr = self._sock.recvfrom(65535)
+            seq, flags, payload = decode_packet(raw)
             if flags & FLAG_DATA:
                 self._send_ack(seq, addr)
                 return payload.decode(), addr
@@ -63,8 +65,10 @@ class ReliableUdp(ReliableTransport):
     def receive_data(self) -> Tuple[bytes, Tuple[str, int]]:
         received: Dict[int, bytes] = {}
         source = None
+        self._sock.settimeout(None)
         while True:
-            seq, flags, payload, addr = self._recv_packet()
+            raw, addr = self._sock.recvfrom(65535)
+            seq, flags, payload = decode_packet(raw)
             source = source or addr
             if flags & FLAG_FIN:
                 self._send_ack(seq, addr)
@@ -72,8 +76,7 @@ class ReliableUdp(ReliableTransport):
             if flags & FLAG_DATA:
                 received[seq] = payload
                 self._send_ack(seq, addr)
-        ordered = sorted(received.items())
-        return b"".join(v for _, v in ordered), source
+        return b"".join(v for _, v in sorted(received.items())), source
 
     def close(self) -> None:
         if self._owns_socket:
@@ -114,12 +117,8 @@ class ReliableUdp(ReliableTransport):
     def _collect_acks(
         self, base: int, acked: Set[int], window_end: int,
     ) -> int:
-        deadline = time.time() + self._timeout
-        while time.time() < deadline:
-            if base >= window_end:
-                break
-            remaining = max(deadline - time.time(), 0.01)
-            self._sock.settimeout(remaining)
+        self._sock.settimeout(self._timeout)
+        while base < window_end:
             try:
                 raw, _ = self._sock.recvfrom(65535)
                 seq, flags, _ = decode_packet(raw)
@@ -149,10 +148,8 @@ class ReliableUdp(ReliableTransport):
         raise TimeoutError("No ACK received after max retries")
 
     def _wait_for_ack(self) -> bool:
-        deadline = time.time() + self._timeout
-        while time.time() < deadline:
-            remaining = max(deadline - time.time(), 0.01)
-            self._sock.settimeout(remaining)
+        self._sock.settimeout(self._timeout)
+        while True:
             try:
                 raw, _ = self._sock.recvfrom(65535)
                 _, flags, _ = decode_packet(raw)
@@ -160,16 +157,9 @@ class ReliableUdp(ReliableTransport):
                     return True
             except socket.timeout:
                 return False
-        return False
 
     def _send_ack(self, seq: int, address: Tuple[str, int]) -> None:
         self._sock.sendto(encode_packet(seq, FLAG_ACK), address)
-
-    def _recv_packet(self) -> Tuple[int, int, bytes, Tuple[str, int]]:
-        self._sock.settimeout(None)
-        raw, addr = self._sock.recvfrom(65535)
-        seq, flags, payload = decode_packet(raw)
-        return seq, flags, payload, addr
 
 
 def create_udp_socket(host: str = "", port: int = 0) -> socket.socket:

@@ -44,7 +44,7 @@ class Lab2Server:
         sock = create_server_socket(
             self._config.host, self._config.port, self._config.backlog,
         )
-        print(f"Lab 2 Server listening on {self._config.host}:{self._config.port}")
+        print(f"Lab 1 TCP Server on {self._config.host}:{self._config.port}")
         try:
             self._accept_loop(sock)
         except KeyboardInterrupt:
@@ -187,7 +187,7 @@ class Lab2Client:
         sock = create_client_socket(self._config.host, self._config.port)
         enable_keepalive(sock)
         self._transport = TcpTransport(sock)
-        print(f"Connected to {self._config.host}:{self._config.port}")
+        print(f"Lab 1 TCP Client -> {self._config.host}:{self._config.port}")
 
     def _disconnect(self) -> None:
         if self._transport:

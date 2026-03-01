@@ -24,7 +24,7 @@ class Lab3Server:
     def run(self) -> None:
         sock = create_udp_socket(self._config.host, self._config.port)
         rudp = ReliableUdp(sock, self._rudp_cfg)
-        print(f"Lab 3 Server listening on {self._config.host}:{self._config.port}")
+        print(f"Lab 2 Reliable UDP Server on {self._config.host}:{self._config.port}")
         try:
             self._serve_loop(rudp)
         except KeyboardInterrupt:
@@ -117,7 +117,7 @@ class Lab3Client:
         sock = create_udp_socket()
         rudp = ReliableUdp(sock, self._rudp_cfg)
         server_addr = (self._config.host, self._config.port)
-        print(f"Lab 3 Client -> {self._config.host}:{self._config.port}")
+        print(f"Lab 2 Reliable UDP Client -> {self._config.host}:{self._config.port}")
         print("Commands: ECHO <text>, TIME, UPLOAD <file>, DOWNLOAD <file>, CLOSE")
         try:
             self._command_loop(rudp, server_addr)

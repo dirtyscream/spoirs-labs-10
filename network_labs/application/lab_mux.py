@@ -53,7 +53,8 @@ class MuxServer:
         )
         srv.setblocking(False)
         self._sel.register(srv, selectors.EVENT_READ)
-        print(f"Lab 3 Mux Server on {self._config.host}:{self._config.port}")
+        print(
+            f"Lab 3 Multiplexing TCP Server on {self._config.host}:{self._config.port}")
         try:
             self._loop(srv)
         except KeyboardInterrupt:

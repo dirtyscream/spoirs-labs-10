@@ -89,7 +89,7 @@ class ReliableUdp(ReliableTransport):
             next_seq = self._emit_window(
                 chunks, base, next_seq, total, address)
             prev_base = base
-            base = self._collect_acks(base, acked)
+            base = self._collect_acks(base, acked, next_seq)
             stall_count = self._check_stall(base, prev_base, stall_count)
             self._resend_missing(base, next_seq, acked, chunks, address)
 
@@ -111,9 +111,13 @@ class ReliableUdp(ReliableTransport):
             self._sock.sendto(pkt, address)
         return max(next_seq, end)
 
-    def _collect_acks(self, base: int, acked: Set[int]) -> int:
-        deadline = time.time() + self._timeout * 2
+    def _collect_acks(
+        self, base: int, acked: Set[int], window_end: int,
+    ) -> int:
+        deadline = time.time() + self._timeout
         while time.time() < deadline:
+            if base >= window_end:
+                break
             remaining = max(deadline - time.time(), 0.01)
             self._sock.settimeout(remaining)
             try:

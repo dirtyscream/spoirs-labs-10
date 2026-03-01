@@ -13,6 +13,8 @@ FLAG_DATA = 0x01
 FLAG_ACK = 0x02
 FLAG_FIN = 0x04
 
+SOCKET_BUF_SIZE = 1048576
+
 
 def encode_packet(seq: int, flags: int, payload: bytes = b"") -> bytes:
     return struct.pack(HEADER_FORMAT, seq, flags) + payload
@@ -58,7 +60,8 @@ class ReliableUdp(ReliableTransport):
         chunks = split_chunks(data, self._max_payload)
         if not chunks:
             chunks = [b""]
-        self._send_windowed(chunks, address)
+        packets = _prebuild_packets(chunks)
+        self._send_windowed(packets, address)
         fin = encode_packet(len(chunks), FLAG_FIN)
         self._send_with_ack(fin, address)
 
@@ -82,19 +85,23 @@ class ReliableUdp(ReliableTransport):
         if self._owns_socket:
             self._sock.close()
 
-    def _send_windowed(self, chunks: List[bytes], address: Tuple[str, int]) -> None:
-        total = len(chunks)
+    def _send_windowed(
+        self, packets: List[bytes], address: Tuple[str, int],
+    ) -> None:
+        total = len(packets)
         base = 0
         next_seq = 0
         acked: Set[int] = set()
         stall_count = 0
         while base < total:
-            next_seq = self._emit_window(
-                chunks, base, next_seq, total, address)
+            end = min(base + self._window, total)
+            for i in range(next_seq, end):
+                self._sock.sendto(packets[i], address)
+            next_seq = max(next_seq, end)
             prev_base = base
             base = self._collect_acks(base, acked, next_seq)
             stall_count = self._check_stall(base, prev_base, stall_count)
-            self._resend_missing(base, next_seq, acked, chunks, address)
+            self._resend_unacked(packets, base, next_seq, acked, address)
 
     def _check_stall(self, base: int, prev_base: int, stall_count: int) -> int:
         if base == prev_base:
@@ -103,16 +110,6 @@ class ReliableUdp(ReliableTransport):
                 raise TimeoutError("Windowed transfer: max retries exceeded")
             return stall_count
         return 0
-
-    def _emit_window(
-        self, chunks: List[bytes], base: int, next_seq: int,
-        total: int, address: Tuple[str, int],
-    ) -> int:
-        end = min(base + self._window, total)
-        for i in range(next_seq, end):
-            pkt = encode_packet(i, FLAG_DATA, chunks[i])
-            self._sock.sendto(pkt, address)
-        return max(next_seq, end)
 
     def _collect_acks(
         self, base: int, acked: Set[int], window_end: int,
@@ -131,14 +128,13 @@ class ReliableUdp(ReliableTransport):
                 break
         return base
 
-    def _resend_missing(
-        self, base: int, next_seq: int, acked: Set[int],
-        chunks: List[bytes], address: Tuple[str, int],
+    def _resend_unacked(
+        self, packets: List[bytes], base: int, next_seq: int,
+        acked: Set[int], address: Tuple[str, int],
     ) -> None:
         for seq in range(base, next_seq):
             if seq not in acked:
-                pkt = encode_packet(seq, FLAG_DATA, chunks[seq])
-                self._sock.sendto(pkt, address)
+                self._sock.sendto(packets[seq], address)
 
     def _send_with_ack(self, packet: bytes, address: Tuple[str, int]) -> None:
         for _ in range(self._max_retries):
@@ -162,8 +158,21 @@ class ReliableUdp(ReliableTransport):
         self._sock.sendto(encode_packet(seq, FLAG_ACK), address)
 
 
+def _prebuild_packets(chunks: List[bytes]) -> List[bytes]:
+    return [encode_packet(i, FLAG_DATA, c) for i, c in enumerate(chunks)]
+
+
 def create_udp_socket(host: str = "", port: int = 0) -> socket.socket:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    _enlarge_buffers(sock)
     sock.bind((host, port))
     return sock
+
+
+def _enlarge_buffers(sock: socket.socket) -> None:
+    try:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, SOCKET_BUF_SIZE)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, SOCKET_BUF_SIZE)
+    except OSError:
+        pass
